@@ -1,0 +1,840 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+type Produit = {
+  id: number;
+  nom: string;
+  prix: number;
+  prixXL?: number;
+  cat: string;
+  desc: string;
+  ingredients: string;
+  emoji: string;
+  color: string;
+};
+
+type Livraison = {
+  ville: string;
+  prix: number;
+};
+
+type PanierItem = Produit & {
+  qty: number;
+};
+
+const TEL = "07.77.30.23.98";
+const TEL_LINK = "33777302398";
+const ADMIN_CODE = "pancakerie";
+
+const LIVRAISON_INIT: Livraison[] = [
+  { ville: "Saint-Jean-de-la-Ruelle", prix: 0 },
+  { ville: "Fleury-les-Aubrais", prix: 2 },
+  { ville: "Orléans (Centre-Ville)", prix: 2 },
+  { ville: "Ingré", prix: 2 },
+  { ville: "La Chapelle-Saint-Mesmin", prix: 2 },
+  { ville: "Saran", prix: 2 },
+  { ville: "Olivet", prix: 3 },
+  { ville: "Checy", prix: 5 },
+];
+
+const PRODUITS_INIT: Produit[] = [
+  {
+    id: 1,
+    nom: "10 Pancakes",
+    prix: 5,
+    cat: "Pancakes",
+    desc: "1 coulis + 1 topping inclus",
+    ingredients:
+      "Pâte maison • Coulis: Chocolat, Caramel, Fraise • Topping: Oreo, Kinder, Speculos • Suppl. 1€",
+    emoji: "🥞",
+    color: "from-[#FFD194] to-[#FF8C90]",
+  },
+  {
+    id: 2,
+    nom: "20 Pancakes",
+    prix: 10,
+    cat: "Pancakes",
+    desc: "1 coulis + 1 topping inclus",
+    ingredients: "Pâte maison • Idéal à partager • Suppl. 1€",
+    emoji: "🥞🥞",
+    color: "from-[#FFD194] to-[#FF8C90]",
+  },
+  {
+    id: 3,
+    nom: "2 Gaufres",
+    prix: 6,
+    cat: "Gaufres",
+    desc: "Fait maison & croustillant",
+    ingredients: "Pâte à gaufre maison • 1 coulis + 1 topping par duo",
+    emoji: "🧇🧇",
+    color: "from-[#FFE29F] to-[#FFA99F]",
+  },
+  {
+    id: 4,
+    nom: "4 Gaufres",
+    prix: 11,
+    cat: "Gaufres",
+    desc: "Fait maison & croustillant",
+    ingredients: "Pâte à gaufre maison • 1 coulis + 1 topping par duo",
+    emoji: "🧇🧇🧇🧇",
+    color: "from-[#FFE29F] to-[#FFA99F]",
+  },
+  {
+    id: 10,
+    nom: "Candy Fruits Petite",
+    prix: 10,
+    cat: "Candy Fruits",
+    desc: "Litchi Barbe à Papa",
+    ingredients: "Fruits frais enrobés • Litchi • Barbe à papa",
+    emoji: "🍇",
+    color: "from-[#FF9A9E] to-[#FECFEF]",
+  },
+  {
+    id: 11,
+    nom: "Candy Fruits Grande",
+    prix: 15,
+    cat: "Candy Fruits",
+    desc: "Litchi Barbe à Papa",
+    ingredients: "Format généreux • Litchi • Barbe à papa",
+    emoji: "🍬",
+    color: "from-[#FF9A9E] to-[#FECFEF]",
+  },
+  {
+    id: 20,
+    nom: "Milkshake Vanille",
+    prix: 5,
+    prixXL: 8,
+    cat: "Milkshake",
+    desc: "Onctueux",
+    ingredients: "Lait frais, Glace vanille, Chantilly",
+    emoji: "🥤",
+    color: "from-[#E0EAFC] to-[#CFDEF3]",
+  },
+  {
+    id: 21,
+    nom: "Milkshake Fraise",
+    prix: 5,
+    prixXL: 8,
+    cat: "Milkshake",
+    desc: "Fruité",
+    ingredients: "Lait frais, Fraises, Glace vanille",
+    emoji: "🍓",
+    color: "from-[#FFC3A0] to-[#FFAFBD]",
+  },
+  {
+    id: 22,
+    nom: "Milkshake Kinder Bueno",
+    prix: 5,
+    prixXL: 8,
+    cat: "Milkshake",
+    desc: "Gourmand",
+    ingredients: "Lait, Glace, Kinder Bueno, Sauce chocolat",
+    emoji: "🍯",
+    color: "from-[#D7B899] to-[#8B5A2B]",
+  },
+  {
+    id: 23,
+    nom: "Milkshake Oreo",
+    prix: 5,
+    prixXL: 8,
+    cat: "Milkshake",
+    desc: "Best-seller",
+    ingredients: "Lait, Glace, Biscuits Oreo, Chantilly",
+    emoji: "🍦",
+    color: "from-[#434343] to-[#B0B0B0]",
+  },
+  {
+    id: 30,
+    nom: "Coca-Cola 33cl",
+    prix: 1.5,
+    cat: "Boissons",
+    desc: "Frais",
+    ingredients: "Canette 33cl bien fraîche",
+    emoji: "🥤",
+    color: "from-[#FF4E50] to-[#F9D423]",
+  },
+  {
+    id: 31,
+    nom: "Oasis Tropical 33cl",
+    prix: 1.5,
+    cat: "Boissons",
+    desc: "Frais",
+    ingredients: "Canette 33cl",
+    emoji: "🍹",
+    color: "from-[#FDC830] to-[#F37335]",
+  },
+];
+
+const CATEGORIES = [
+  "Tous",
+  "Pancakes",
+  "Gaufres",
+  "Candy Fruits",
+  "Milkshake",
+  "Boissons",
+];
+
+const STORAGE_PRODUITS = "pancakerie_produits";
+const STORAGE_LIVRAISON = "pancakerie_livraison";
+const STORAGE_PANIER = "pancakerie_panier";
+
+export default function Home() {
+  const [produits, setProduits] = useState<Produit[]>(PRODUITS_INIT);
+  const [livraison, setLivraison] =
+    useState<Livraison[]>(LIVRAISON_INIT);
+  const [cat, setCat] = useState("Tous");
+  const [panier, setPanier] = useState<PanierItem[]>([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    nom: "",
+    tel: "",
+    adresse: "",
+    ville: "Saint-Jean-de-la-Ruelle",
+  });
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [toast, setToast] = useState("");
+  const [donneesChargees, setDonneesChargees] = useState(false);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const storedProduits = localStorage.getItem(STORAGE_PRODUITS);
+      const storedLivraison = localStorage.getItem(STORAGE_LIVRAISON);
+      const storedPanier = localStorage.getItem(STORAGE_PANIER);
+
+      if (storedProduits) {
+        try {
+          setProduits(JSON.parse(storedProduits));
+        } catch {
+          // Données locales invalides : valeurs par défaut.
+        }
+      }
+
+      if (storedLivraison) {
+        try {
+          setLivraison(JSON.parse(storedLivraison));
+        } catch {
+          // Données locales invalides : valeurs par défaut.
+        }
+      }
+
+      if (storedPanier) {
+        try {
+          setPanier(JSON.parse(storedPanier));
+        } catch {
+          // Données locales invalides : panier vide.
+        }
+      }
+
+      setDonneesChargees(true);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (!donneesChargees) return;
+
+    localStorage.setItem(STORAGE_PANIER, JSON.stringify(panier));
+  }, [panier, donneesChargees]);
+
+   const save = (nextProduits: Produit[], nextLivraison: Livraison[]) => {
+    localStorage.setItem(STORAGE_PRODUITS, JSON.stringify(nextProduits));
+    localStorage.setItem(STORAGE_LIVRAISON, JSON.stringify(nextLivraison));
+  };
+
+  const produitsFiltres = useMemo(
+    () =>
+      cat === "Tous"
+        ? produits
+        : produits.filter((produit) => produit.cat === cat),
+    [cat, produits]
+  );
+
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 2000);
+  };
+
+  const ajouter = (produit: Produit) => {
+    setPanier((current) => {
+      const existing = current.find((item) => item.nom === produit.nom);
+
+      if (existing) {
+        return current.map((item) =>
+          item.nom === produit.nom
+            ? { ...item, qty: item.qty + 1 }
+            : item
+        );
+      }
+
+      return [...current, { ...produit, qty: 1 }];
+    });
+
+    showToast(`${produit.nom} ajouté ✅`);
+  };
+
+  const moins = (nom: string) => {
+    setPanier((current) => {
+      const item = current.find((entry) => entry.nom === nom);
+
+      if (!item) return current;
+
+      if (item.qty === 1) {
+        return current.filter((entry) => entry.nom !== nom);
+      }
+
+      return current.map((entry) =>
+        entry.nom === nom
+          ? { ...entry, qty: entry.qty - 1 }
+          : entry
+      );
+    });
+  };
+
+  const plus = (nom: string) => {
+    setPanier((current) =>
+      current.map((item) =>
+        item.nom === nom ? { ...item, qty: item.qty + 1 } : item
+      )
+    );
+  };
+
+  const viderPanier = () => {
+    if (window.confirm("Vider le panier ?")) {
+      setPanier([]);
+      setShowForm(false);
+    }
+  };
+
+  const total = panier.reduce(
+    (sum, item) => sum + item.prix * item.qty,
+    0
+  );
+
+  const frais =
+    livraison.find((ville) => ville.ville === form.ville)?.prix ?? 0;
+
+  const totalAvecLivraison = total + frais;
+
+  const nbArticles = panier.reduce(
+    (sum, item) => sum + item.qty,
+    0
+  );
+
+  const validerCommande = () => {
+    if (panier.length === 0) {
+      window.alert("Le panier est vide.");
+      return;
+    }
+
+    if (!form.nom || !form.tel || !form.adresse) {
+      window.alert("Remplis nom, téléphone et adresse.");
+      return;
+    }
+
+    const detail = panier
+      .map(
+        (item) =>
+          `• ${item.qty}x ${item.nom} (${(
+            item.prix * item.qty
+          ).toFixed(2)}€)`
+      )
+      .join("\n");
+
+    const message = [
+      "Bonjour Pancakerie 🥞",
+      "Je souhaite commander :",
+      detail,
+      "",
+      `Sous-total : ${total.toFixed(2)}€`,
+      `Livraison (${form.ville}) : ${
+        frais === 0 ? "Gratuite" : `${frais.toFixed(2)}€`
+      }`,
+      `TOTAL : ${totalAvecLivraison.toFixed(2)}€`,
+      "",
+      `📍 ${form.adresse}, ${form.ville}`,
+      `👤 ${form.nom} - ${form.tel}`,
+    ].join("\n");
+
+    const whatsappUrl = `https://wa.me/${TEL_LINK}?text=${encodeURIComponent(
+      message
+    )}`;
+
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const updateProduit = (
+    index: number,
+    changes: Partial<Produit>
+  ) => {
+    const next = [...produits];
+    next[index] = { ...next[index], ...changes };
+    setProduits(next);
+    save(next, livraison);
+  };
+
+  const updateLivraison = (index: number, prix: number) => {
+    const next = [...livraison];
+    next[index] = { ...next[index], prix };
+    setLivraison(next);
+    save(produits, next);
+  };
+
+ if (!donneesChargees) return null;
+
+  return (
+    <div className="min-h-screen bg-[#FFF1F2] text-[#831843]">
+      {toast && (
+        <div className="fixed top-20 left-1/2 z-[100] -translate-x-1/2 rounded-full bg-black px-6 py-2 text-sm font-bold text-white shadow-lg">
+          {toast}
+        </div>
+      )}
+
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#FECDD3] bg-white/95 px-6 py-4 backdrop-blur">
+        <div className="flex items-center gap-2 text-xl font-black">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EC4899] text-white">
+            P
+          </span>
+          PANCAKERIE
+        </div>
+
+        <a
+          href="#panier"
+          className="rounded-full bg-[#EC4899] px-5 py-2 text-sm font-bold text-white shadow-md transition hover:bg-[#BE185D]"
+        >
+          🛒 {nbArticles} - {total.toFixed(2)}€
+        </a>
+      </header>
+
+      {isAdmin && (
+        <div className="border-b-4 border-[#EC4899] bg-[#FEF08A] p-6">
+          <h2 className="text-center font-black">
+            🔧 MODE ADMIN ACTIF - Modifs enregistrées automatiquement
+          </h2>
+
+          <div className="mx-auto mt-4 grid max-w-4xl gap-3 md:grid-cols-2">
+            {produits.map((produit, index) => (
+              <div
+                key={produit.id}
+                className="rounded-xl border bg-white p-3 text-xs"
+              >
+                <div className="font-bold">
+                  {produit.cat} - {produit.nom}
+                </div>
+
+                <input
+                  value={produit.nom}
+                  onChange={(event) =>
+                    updateProduit(index, {
+                      nom: event.target.value,
+                    })
+                  }
+                  className="mt-1 w-full rounded border px-2 py-1"
+                />
+
+                <input
+                  value={produit.ingredients}
+                  onChange={(event) =>
+                    updateProduit(index, {
+                      ingredients: event.target.value,
+                    })
+                  }
+                  className="mt-1 w-full rounded border px-2 py-1"
+                />
+
+                <div className="mt-1 flex items-center gap-2">
+                  <span>Prix €</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={produit.prix}
+                    onChange={(event) =>
+                      updateProduit(index, {
+                        prix: Number.parseFloat(event.target.value) || 0,
+                      })
+                    }
+                    className="w-20 rounded border px-2 py-1"
+                  />
+
+                  {produit.prixXL !== undefined && (
+                    <>
+                      <span>XL €</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={produit.prixXL}
+                        onChange={(event) =>
+                          updateProduit(index, {
+                            prixXL:
+                              Number.parseFloat(event.target.value) || 0,
+                          })
+                        }
+                        className="w-20 rounded border px-2 py-1"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mx-auto mt-4 max-w-4xl rounded-xl border bg-white p-3">
+            <h3 className="mb-2 text-sm font-bold">
+              Frais de livraison
+            </h3>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {livraison.map((item, index) => (
+                <div
+                  key={item.ville}
+                  className="flex items-center justify-between rounded border px-2 py-1 text-xs"
+                >
+                  <span>{item.ville}</span>
+
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={item.prix}
+                    onChange={(event) =>
+                      updateLivraison(
+                        index,
+                        Number.parseFloat(event.target.value) || 0
+                      )
+                    }
+                    className="w-16 rounded border px-1 py-0.5 text-center"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-4 text-center">
+            <button
+              onClick={() => setIsAdmin(false)}
+              className="rounded-full bg-black px-6 py-2 text-sm text-white"
+            >
+              Fermer admin
+            </button>
+          </div>
+        </div>
+      )}
+
+      <section className="mx-auto max-w-6xl px-6 py-8 text-center">
+        <h1 className="text-4xl font-black leading-tight md:text-5xl">
+          <span className="text-[#D9A75E]">Pancakes • Gaufres • Milkshakes</span>{" "}
+          <span className="text-[#EC4899]">faits maison</span>
+        </h1>
+
+        <p className="mt-3 text-lg font-medium text-[#BE185D]/70">
+         Livraison rapide à Orléans et ses environs • Commande simple via WhatsApp
+        </p>
+
+        <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="relative h-48 overflow-hidden rounded-3xl border border-[#FECDD3] shadow-sm">
+            <img
+              src="/pancake.jpg"
+              alt="Pancakes"
+              className="h-full w-full object-cover"
+            />
+            <span className="absolute bottom-2 left-2 rounded-full bg-white px-3 py-1 text-xs font-black">
+              🥞 PANCAKES
+            </span>
+          </div>
+
+          <div className="relative h-48 overflow-hidden rounded-3xl border border-[#FECDD3] shadow-sm">
+            <img
+              src="/milkshake.jpg"
+              alt="Milkshakes"
+              className="h-full w-full object-cover"
+            />
+            <span className="absolute bottom-2 left-2 rounded-full bg-white px-3 py-1 text-xs font-black">
+              🥤 MILKSHAKES
+            </span>
+          </div>
+
+          <div className="relative h-48 overflow-hidden rounded-3xl border border-[#FECDD3] shadow-sm">
+            <img
+              src="/boissonsfraiches.jpg"
+              alt="Boissons"
+              className="h-full w-full object-cover"
+            />
+            <span className="absolute bottom-2 left-2 rounded-full bg-white px-3 py-1 text-xs font-black">
+              🧃 BOISSONS FRAÎCHES
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="mb-6 flex flex-wrap justify-center gap-2">
+          {CATEGORIES.map((category) => (
+            <button
+              key={category}
+              onClick={() => setCat(category)}
+              className={`rounded-full border px-4 py-2 text-xs font-bold transition ${
+                cat === category
+                  ? "border-[#EC4899] bg-[#EC4899] text-white shadow"
+                  : "border-[#FECDD3] bg-white text-[#BE185D] hover:bg-[#FFF1F2]"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-3">
+          {produitsFiltres.map((produit) => (
+            <div
+              key={produit.id}
+              className="flex flex-col overflow-hidden rounded-3xl border border-[#FECDD3] bg-white shadow-sm transition hover:shadow-md"
+            >
+              <div
+                className={`flex h-28 flex-col items-center justify-center bg-gradient-to-br ${produit.color} p-4 text-center`}
+              >
+                <span className="text-4xl">{produit.emoji}</span>
+                <span className="mt-1 text-[10px] font-black tracking-widest opacity-60">
+                  {produit.cat.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="flex flex-1 flex-col p-4">
+                <h3 className="text-sm font-black">{produit.nom}</h3>
+
+                <p className="mt-1 text-xs text-[#BE185D]/60">
+                  {produit.desc}
+                </p>
+
+                <p className="mt-2 rounded-xl border border-dashed border-[#FECDD3] bg-[#FFF1F2] p-2 text-[11px] leading-tight">
+                  {produit.ingredients}
+                </p>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="font-black text-[#BE185D]">
+                    {produit.prix.toFixed(2)}€
+                    {produit.prixXL !== undefined && (
+                      <span className="text-xs font-normal">
+                        {" "}
+                        / XL {produit.prixXL.toFixed(2)}€
+                      </span>
+                    )}
+                  </span>
+
+                  {produit.prixXL !== undefined ? (
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => ajouter(produit)}
+                        className="rounded-full bg-[#EC4899] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#BE185D]"
+                      >
+                        5€
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          ajouter({
+                            ...produit,
+                            nom: `${produit.nom} XL`,
+                            prix: produit.prixXL as number,
+                          })
+                        }
+                        className="rounded-full bg-[#BE185D] px-3 py-1.5 text-xs font-bold text-white hover:bg-black"
+                      >
+                        XL
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => ajouter(produit)}
+                      className="rounded-full bg-[#EC4899] px-4 py-1.5 text-xs font-bold text-white hover:bg-[#BE185D]"
+                    >
+                      Ajouter +
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {panier.length > 0 && (
+          <div
+            id="panier"
+            className="mx-auto mt-10 max-w-xl scroll-mt-24 rounded-3xl border-2 border-[#EC4899] bg-white p-6 shadow-lg"
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="text-lg font-black">
+                Récap ({nbArticles})
+              </h3>
+
+              <button
+                onClick={viderPanier}
+                className="rounded-full border bg-gray-100 px-3 py-1 text-xs font-bold hover:bg-red-100"
+              >
+                🗑️ Vider
+              </button>
+            </div>
+
+            {panier.map((item) => (
+              <div
+                key={item.nom}
+                className="flex items-center justify-between border-b border-dashed border-[#FECDD3] py-2"
+              >
+                <div>
+                  <div className="text-sm font-bold">{item.nom}</div>
+                  <div className="text-xs text-[#BE185D]">
+                    {item.prix.toFixed(2)}€ x {item.qty}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => moins(item.nom)}
+                    className="h-7 w-7 rounded-full border border-[#FECDD3] font-bold hover:bg-gray-50"
+                  >
+                    -
+                  </button>
+
+                  <span className="w-6 text-center text-sm font-bold">
+                    {item.qty}
+                  </span>
+
+                  <button
+                    onClick={() => plus(item.nom)}
+                    className="h-7 w-7 rounded-full bg-[#EC4899] font-bold text-white"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            <div className="mt-3 flex justify-between border-t pt-3 text-lg font-black">
+              <span>Total + livraison</span>
+              <span>{totalAvecLivraison.toFixed(2)}€</span>
+            </div>
+
+            <p className="mt-1 text-center text-xs text-gray-500">
+              {form.ville} :{" "}
+              {frais === 0
+                ? "Livraison Gratuite"
+                : `+ ${frais.toFixed(2)}€ de livraison`}
+            </p>
+
+            {!showForm ? (
+              <button
+                onClick={() => setShowForm(true)}
+                className="mt-4 w-full rounded-full bg-[#EC4899] py-3 font-black text-white shadow hover:bg-[#BE185D]"
+              >
+                Commander
+              </button>
+            ) : (
+              <div className="mt-4 space-y-2 rounded-2xl border border-[#FECDD3] bg-[#FFF1F2] p-4">
+                <input
+                  placeholder="Nom et prénom"
+                  value={form.nom}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      nom: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-full border border-[#FECDD3] bg-white px-4 py-2 text-sm"
+                />
+
+                <input
+                  placeholder="Téléphone"
+                  type="tel"
+                  value={form.tel}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      tel: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-full border border-[#FECDD3] bg-white px-4 py-2 text-sm"
+                />
+
+                <input
+                  placeholder="Adresse complète"
+                  value={form.adresse}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      adresse: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-full border border-[#FECDD3] bg-white px-4 py-2 text-sm"
+                />
+
+                <select
+                  value={form.ville}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      ville: event.target.value,
+                    })
+                  }
+                  className="w-full rounded-full border border-[#FECDD3] bg-white px-4 py-2 text-sm"
+                >
+                  {livraison.map((item) => (
+                    <option key={item.ville} value={item.ville}>
+                      {item.ville} -{" "}
+                      {item.prix === 0
+                        ? "Gratuit"
+                        : `${item.prix.toFixed(2)}€`}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={validerCommande}
+                  className="w-full rounded-full bg-[#25D366] py-3 font-black text-white shadow hover:bg-[#1ebe5a]"
+                >
+                  Commander sur WhatsApp
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <footer className="border-t border-[#FECDD3] bg-white py-8 text-center text-sm">
+        <div className="font-black">
+          PANCAKERIE • {TEL} • Orléans
+        </div>
+
+        <p className="mt-1 text-xs text-gray-500">
+          Vente à domicile - Sur commande
+        </p>
+
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <input
+            type="password"
+            value={codeInput}
+            onChange={(event) => setCodeInput(event.target.value)}
+            placeholder="code admin"
+            className="w-32 rounded-full border border-gray-300 px-3 py-1.5 text-center text-xs"
+          />
+
+          <button
+            onClick={() => {
+              if (codeInput === ADMIN_CODE) {
+                setIsAdmin(true);
+                setCodeInput("");
+              } else {
+                window.alert("Code faux");
+              }
+            }}
+            className="rounded-full bg-gray-900 px-4 py-1.5 text-xs text-white"
+          >
+            Entrer Admin
+          </button>
+        </div>
+      </footer>
+    </div>
+  );
+}
